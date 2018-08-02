@@ -85,10 +85,8 @@ void cleaner()
 
 void fprint_block(FILE *fptr, GOST_Data_Part *ptr)
 {
-    for (int i = 0; i < 2; ++i) {
-        fprintf(fptr, "%08x", ptr->half[i]);
-    }
-    fprintf(fptr, "\r\n");
+    fprintf(fptr, "%016llx\r\n", ptr->full);
+    printf("%016llx\r\n", ptr->full);
 }
 
 int main(int argc, char *argv[])
@@ -151,6 +149,11 @@ int main(int argc, char *argv[])
 
                 fprint_block(OutValues, &block);
             }
+
+            block.full = 0;
+            fprint_block(InValues, &block);
+            GOST_Crypt_Step(&block, Gost_Table, *((uint32_t *) GOST_Key_d), 0);
+            fprint_block(OutValues, &block);
 
             bool err = fclose(InValues) || fclose(OutValues);
             if (!err) {

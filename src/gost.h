@@ -30,11 +30,11 @@
 /**
   Положение накопителя N1 в объедененние данных GOST_Data_Part
 */
-#define _GOST_Data_Part_N1_Half 1
+#define _GOST_Data_Part_N1_Half 0
 /**
   Положение накопителя N2 в объедененние данных GOST_Data_Part
 */
-#define _GOST_Data_Part_N2_Half 0
+#define _GOST_Data_Part_N2_Half 1
 /**
   Байт по умолчанию.
 */
@@ -83,7 +83,7 @@ typedef union
 /**
   Cовместимость с архитектурой еталонного шифратора
 */
-#define _GOST_ROT 1
+#define _GOST_ROT 0
 /**
   Совместимость с входами синхропосылки еталонного шифратора
 */
