@@ -7,6 +7,8 @@
 #include <qDebug>
 
 #define FILENAME_LENGTH 40
+#define MY_RAND_A 6364136223846793005llu
+#define MY_RAND_C 1442695040888963407llu
 
 uint8_t Gost_Table[_GOST_TABLE_SIZE] = {
     0x0C, 0x04, 0x06, 0x02, 0x0A, 0x05, 0x0B, 0x09, 0x0E, 0x08, 0x0D, 0x07, 0x00, 0x03, 0x0F, 0x01,
@@ -62,6 +64,24 @@ unsigned char Data_C_GF_Et[24] = {
 };
 */
 
+uint64_t my_srand;
+
+void my_rand_init()
+{
+    my_srand = QDateTime::currentMSecsSinceEpoch();
+}
+
+uint64_t my_rand()
+{
+    static uint64_t last_value = my_srand;
+    uint64_t result   = 0;
+    last_value        = (MY_RAND_A * last_value + MY_RAND_C) % (~0);
+    result            = last_value & 0xFFFFFFFF00000000;
+    last_value        = (MY_RAND_A * last_value + MY_RAND_C) % (~0);
+    result           |= (last_value & 0xFFFFFFFF00000000) >> 32;
+    return last_value;
+}
+
 void random_init()
 {
     qsrand(QDateTime::currentMSecsSinceEpoch());
@@ -73,7 +93,7 @@ void random_block(GOST_Data_Part *ptr)
     uint64_t test;
     for (int i = 0; i < 8 * sizeof(GOST_Data_Part); ++i) {
         test = (1 << i) * (qrand() % 2);
-        ptr->full |= (1 << i) * (qrand() % 2);
+        ptr->full |= test;
     }
 }
 
@@ -86,7 +106,6 @@ void cleaner()
 void fprint_block(FILE *fptr, GOST_Data_Part *ptr)
 {
     fprintf(fptr, "%016llx\r\n", ptr->full);
-    printf("%016llx\r\n", ptr->full);
 }
 
 int main(int argc, char *argv[])
@@ -140,7 +159,8 @@ int main(int argc, char *argv[])
         }
 
         GOST_Data_Part block;
-        random_init();
+        //random_init();
+        my_rand_init();
 
         FILE *InValues, *OutValues;
 
@@ -156,7 +176,8 @@ int main(int argc, char *argv[])
              ( OutValues = fopen(filename_out, "w") )    ) {
 
             for (uint64_t i = 0; i < quantity; ++i) {
-                random_block(&block);
+                //random_block(&block);
+                block.full = my_rand();
                 fprint_block(InValues, &block);
 
                 if (mode == '2') {
