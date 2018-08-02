@@ -92,8 +92,18 @@ void fprint_block(FILE *fptr, GOST_Data_Part *ptr)
 int main(int argc, char *argv[])
 {
     for (;;) {
-        char filename[FILENAME_LENGTH - 8];
+        char mode;
+        printf("Enter the mode of generation\r\n"
+               "1 - One stage of simple replacement\r\n"
+               "2 - Simple replacement mode\r\n");
+        if ( ( (mode = getchar()) != '1' ) && ( mode != '2' ) ) {
+            printf("Mode has not been entered\r\n");
+            cleaner();
+            continue;
+        }
+        cleaner();
 
+        char filename[FILENAME_LENGTH - 8];
         printf("Enter the file name of input values file that will be generated\r\n(example - test "
                "(test_enc.txt will be created automatically), size of name < %d symbols)\r\n", FILENAME_LENGTH - 8  );
         scanf("%s", filename);
@@ -109,16 +119,25 @@ int main(int argc, char *argv[])
         }
         cleaner();
 
-        char mode;
-        printf("Enter the mode of generation\r\n"
-               "1 - One stage of simple replacement\r\n"
-               "2 - Simple replacement mode\r\n");
-        if ( ( (mode = getchar()) != '1' ) && ( mode != '2' ) ) {
-            printf("Mode has not been entered\r\n");
-            cleaner();
-            continue;
-        }
+        printf("Do you want to enter the key (in this case default (or last) key will be lost)? (Y / <another symbol>)\r\n");
+        char key_in = getchar();
         cleaner();
+        if (key_in == 'Y') {
+            for (int i = 0; i < sizeof(GOST_Key_d) / 4; ++i) {
+                printf("Enter the number that corresponding to "
+                       "digit places %d - %d of key (hexadecimal number)\r\n", 32 * (i + 1) - 1, 32 * i);
+                if (scanf("%x", ((uint32_t *) GOST_Key_d) + i) != 1) {
+                    printf("You have entered incorrect number\r\n");
+                    cleaner();
+                    --i;
+                    continue;
+                }
+                cleaner();
+            }
+            printf("My input for key:\r\n");
+            for (int i = 0; i < sizeof(GOST_Key_d) / 4; ++i)
+                printf("%d value: %08x\r\n", i + 1, *(((uint32_t *) GOST_Key_d) + i) );
+        }
 
         GOST_Data_Part block;
         random_init();
@@ -149,11 +168,6 @@ int main(int argc, char *argv[])
 
                 fprint_block(OutValues, &block);
             }
-
-            block.full = 0;
-            fprint_block(InValues, &block);
-            GOST_Crypt_Step(&block, Gost_Table, *((uint32_t *) GOST_Key_d), 0);
-            fprint_block(OutValues, &block);
 
             bool err = fclose(InValues) || fclose(OutValues);
             if (!err) {
